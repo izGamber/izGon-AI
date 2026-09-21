@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}izGon AI - Brain Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container-main">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <i class="fas fa-brain"></i> izGon AI
+            </div>
+            <div class="navbar-menu">
+                <a href="/" class="nav-link active">Dashboard</a>
+                <a href="/brain" class="nav-link">Brain</a>
+                <a href="/memories" class="nav-link">Memorije</a>
+                <a href="/settings" class="nav-link">Postavke</a>
+            </div>
+            <div class="navbar-right">
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

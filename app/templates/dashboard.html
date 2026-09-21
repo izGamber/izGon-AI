@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - izGon AI{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Header -->
+    <section class="dashboard-header">
+        <h1>
+            <i class="fas fa-chart-line"></i> Dashboard
+        </h1>
+        <p class="subtitle">Kompletan pregled AI sistema</p>
+    </section>
+
+    <!-- Stats Grid -->
+    <section class="stats-grid">
+        <div class="stat-card brain-active">
+            <div class="stat-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Brain Status</h3>
+                <p class="stat-value" id="brainStatus">Učitavanje...</p>
+                <p class="stat-label">Sistem je aktivan</p>
+            </div>
+        </div>
+
+        <div class="stat-card memories">
+            <div class="stat-icon">
+                <i class="fas fa-database"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Memorije</h3>
+                <p class="stat-value" id="totalMemories">0</p>
+                <p class="stat-label">Ukupno čuvanih</p>
+            </div>
+        </div>
+
+        <div class="stat-card projects">
+            <div class="stat-icon">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Projekti</h3>
+                <p class="stat-value" id="totalProjects">0</p>
+                <p class="stat-label">Aktivnih projekata</p>
+            </div>
+        </div>
+
+        <div class="stat-card snapshots">
+            <div class="stat-icon">
+                <i class="fas fa-camera"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Snapshots</h3>
+                <p class="stat-value" id="totalSnapshots">0</p>
+                <p class="stat-label">Sačuvanih stanja</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Activity Section -->
+    <section class="activity-section">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-history"></i> Nedavna Aktivnost
+            </h2>
+            <button class="btn-secondary" onclick="refreshActivity()">
+                <i class="fas fa-sync"></i> Osvežj
+            </button>
+        </div>
+        
+        <div class="activity-list" id="activityList">
+            <p class="loading">Učitavanje aktivnosti...</p>
+        </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-bolt"></i> Brze Akcije
+            </h2>
+        </div>
+        
+        <div class="actions-grid">
+            <button class="action-btn" onclick="openAddMemoryModal()">
+                <i class="fas fa-plus"></i>
+                <span>Nova Memorija</span>
+            </button>
+            <button class="action-btn" onclick="openBrainAnalysis()">
+                <i class="fas fa-microscope"></i>
+                <span>Analiza Mozga</span>
+            </button>
+            <button class="action-btn" onclick="takeSnapshot()">
+                <i class="fas fa-camera"></i>
+                <span>Pravi Snapshot</span>
+            </button>
+            <button class="action-btn" onclick="viewMemories()">
+                <i class="fas fa-list"></i>
+                <span>Sve Memorije</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Memory Chart -->
+    <section class="chart-section">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-chart-pie"></i> Memorije po Tipu
+            </h2>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="memoryChart"></canvas>
+        </div>
+    </section>
+</div>
+
+<!-- Modal za dodavanje memorije -->
+<div id="addMemoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Nova Memorija</h2>
+            <button class="close-btn" onclick="closeModal('addMemoryModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="memoryForm">
+                <div class="form-group">
+                    <label>Tip Memorije</label>
+                    <select name="memoryType" required>
+                        <option value="note">Napomena</option>
+                        <option value="learning">Učenje</option>
+                        <option value="insight">Uvid</option>
+                        <option value="error">Greška</option>
+                        <option value="solution">Rešenje</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Sadržaj</label>
+                    <textarea name="content" required placeholder="Unesite sadržaj memorije..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Važnost (1-5)</label>
+                    <input type="range" name="importance" min="1" max="5" value="3">
+                    <span id="importanceValue">3</span>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addMemoryModal')">
+                        Otkaži
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        Čuva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const socket = io();
+
+    // Real-time ažuriranja
+    socket.on('memory_added', (data) => {
+        console.log('Nova memorija:', data);
+        updateStats();
+        refreshActivity();
+    });
+
+    socket.on('brain_update', (data) => {
+        console.log('Brain update:', data);
+        updateStats();
+    });
+
+    // Inicijalizacija
+    document.addEventListener('DOMContentLoaded', () => {
+        updateStats();
+        refreshActivity();
+    });
+
+    function updateStats() {
+        fetch('/api/brain/stats')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('totalMemories').textContent = data.total_memories || 0;
+                document.getElementById('totalSnapshots').textContent = data.snapshot_count || 0;
+                document.getElementById('brainStatus').textContent = data.brain_health === 'optimal' ? '✅ Optimalno' : '⚠️ Potrebno učenje';
+            });
+    }
+
+    function refreshActivity() {
+        fetch('/api/activities')
+            .then(r => r.json())
+            .then(activities => {
+                const list = document.getElementById('activityList');
+                list.innerHTML = activities.map(a => `
+                    <div class="activity-item">
+                        <div class="activity-icon ${a.type}">
+                            <i class="fas fa-${getActivityIcon(a.type)}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>${a.title}</p>
+                            <span class="activity-time">${a.time}</span>
+                        </div>
+                    </div>
+                `).join('');
+            });
+    }
+
+    function getActivityIcon(type) {
+        const icons = {
+            'memory': 'brain',
+            'snapshot': 'camera',
+            'project': 'folder',
+            'error': 'exclamation'
+        };
+        return icons[type] || 'circle';
+    }
+
+    function openAddMemoryModal() {
+        document.getElementById('addMemoryModal').style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Form submission
+    document.getElementById('memoryForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        fetch('/api/brain/remember', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: formData.get('content'),
+                memory_type: formData.get('memoryType'),
+                importance: formData.get('importance')
+            })
+        }).then(r => r.json())
+          .then(data => {
+              alert('Memorija čuvana! ✅');
+              closeModal('addMemoryModal');
+              e.target.reset();
+              updateStats();
+              socket.emit('memory_added', data);
+          });
+    });
+
+    function takeSnapshot() {
+        fetch('/api/brain/snapshot', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                alert(`Snapshot kreiran! (${data.memory_count} memorija)`);
+                updateStats();
+            });
+    }
+
+    // Theme toggle
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    });
+</script>
+{% endblock %}

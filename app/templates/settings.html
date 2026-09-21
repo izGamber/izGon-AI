@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - izGon AI{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <section class="settings-header">
+        <h1>
+            <i class="fas fa-cog"></i> Postavke
+        </h1>
+        <p class="subtitle">Konfiguracija izGon AI sistema</p>
+    </section>
+
+    <div class="settings-container">
+        <!-- Sidebar -->
+        <aside class="settings-sidebar">
+            <div class="settings-menu">
+                <button class="settings-btn active" onclick="showTab('general')">
+                    <i class="fas fa-sliders-h"></i> Opšte
+                </button>
+                <button class="settings-btn" onclick="showTab('ai-models')">
+                    <i class="fas fa-brain"></i> AI Modeli
+                </button>
+                <button class="settings-btn" onclick="showTab('memory')">
+                    <i class="fas fa-database"></i> Memorija
+                </button>
+                <button class="settings-btn" onclick="showTab('backup')">
+                    <i class="fas fa-cloud-upload-alt"></i> Backup
+                </button>
+                <button class="settings-btn" onclick="showTab('notifications')">
+                    <i class="fas fa-bell"></i> Notifikacije
+                </button>
+                <button class="settings-btn" onclick="showTab('about')">
+                    <i class="fas fa-info-circle"></i> O aplikaciji
+                </button>
+            </div>
+        </aside>
+
+        <!-- Settings Content -->
+        <main class="settings-content">
+            <!-- Opšte -->
+            <div id="general" class="settings-tab active">
+                <h2>Opšte Postavke</h2>
+                
+                <div class="settings-group">
+                    <label>Tema</label>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" onclick="setTheme('light')">
+                            <i class="fas fa-sun"></i> Light
+                        </button>
+                        <button class="toggle-btn" onclick="setTheme('dark')">
+                            <i class="fas fa-moon"></i> Dark
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <label>Jezik</label>
+                    <select id="languageSelect" onchange="changeLanguage(this.value)">
+                        <option value="sr">Srpski</option>
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Verzija</label>
+                    <p class="info-text">izGon AI v1.0.0</p>
+                </div>
+            </div>
+
+            <!-- AI Modeli -->
+            <div id="ai-models" class="settings-tab">
+                <h2>Dostupni AI Modeli</h2>
+                <p class="tab-description">Odaberi koje AI modele želiš da koristiš</p>
+                
+                <div class="models-list">
+                    <div class="model-item">
+                        <div class="model-info">
+                            <h3>GPT-4</h3>
+                            <p>OpenAI - Najtačniji model</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="toggleModel('GPT-4', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="model-item">
+                        <div class="model-info">
+                            <h3>Claude 3</h3>
+                            <p>Anthropic - Odličan za analizu</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="toggleModel('Claude', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="model-item">
+                        <div class="model-info">
+                            <h3>Gemini</h3>
+                            <p>Google - Multimodalni model</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="toggleModel('Gemini', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="model-item">
+                        <div class="model-info">
+                            <h3>Custom API</h3>
+                            <p>Vlastiti API endpoint</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" onchange="toggleModel('Custom API', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memorija -->
+            <div id="memory" class="settings-tab">
+                <h2>Postavke Memorije</h2>
+                
+                <div class="settings-group">
+                    <label>Maksimalan broj memorija</label>
+                    <input type="number" value="10000" onchange="updateSetting('max_memories', this.value)">
+                    <small>Sistem će brisati najstarije memorije kad se dosegne limit</small>
+                </div>
+
+                <div class="settings-group">
+                    <label>Čuvanje memorija (dani)</label>
+                    <input type="number" value="365" onchange="updateSetting('memory_retention_days', this.value)">
+                    <small>Memorije starije od ovog perioda će biti obrisane</small>
+                </div>
+
+                <div class="settings-group">
+                    <button class="btn-secondary" onclick="deleteAllMemories()">
+                        <i class="fas fa-trash"></i> Obriši sve memorije
+                    </button>
+                    <small style="color: #ef4444;">⚠️ Ova akcija se ne može vratiti!</small>
+                </div>
+
+                <div class="settings-group">
+                    <button class="btn-primary" onclick="exportMemories()">
+                        <i class="fas fa-download"></i> Preuzmi memorije
+                    </button>
+                </div>
+            </div>
+
+            <!-- Backup -->
+            <div id="backup" class="settings-tab">
+                <h2>Backup i Oporavak</h2>
+                
+                <div class="settings-group">
+                    <label>Automatski backup</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked onchange="updateSetting('auto_backup', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-group">
+                    <label>Interval backupa (minuta)</label>
+                    <input type="number" value="60" onchange="updateSetting('backup_interval', this.value)">
+                </div>
+
+                <div class="settings-group">
+                    <button class="btn-primary" onclick="createBackup()">
+                        <i class="fas fa-cloud-upload-alt"></i> Kreiraj backup
+                    </button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Dostupni backupi</h3>
+                    <div id="backupsList"></div>
+                </div>
+            </div>
+
+            <!-- Notifikacije -->
+            <div id="notifications" class="settings-tab">
+                <h2>Notifikacije</h2>
+                
+                <div class="settings-group">
+                    <label>Omogući notifikacije</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked onchange="updateSetting('enable_notifications', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-group">
+                    <label>
+                        <input type="checkbox" checked>
+                        Notifikuj kada je memorija dodana
+                    </label>
+                </div>
+
+                <div class="settings-group">
+                    <label>
+                        <input type="checkbox" checked>
+                        Notifikuj o snapshotu
+                    </label>
+                </div>
+
+                <div class="settings-group">
+                    <label>
+                        <input type="checkbox" checked>
+                        Notifikuj pri greškama
+                    </label>
+                </div>
+            </div>
+
+            <!-- O aplikaciji -->
+            <div id="about" class="settings-tab">
+                <h2>O izGon AI</h2>
+                
+                <div class="about-content">
+                    <div class="about-card">
+                        <h3>🧠 izGon AI</h3>
+                        <p>Advanced AI Memory Management System</p>
+                        <p class="version">Verzija: 1.0.0</p>
+                    </div>
+
+                    <div class="about-card">
+                        <h3>📋 Opis</h3>
+                        <p>izGon AI je inteligentni sistem za upravljanje AI memorijom koji omogućava:</p>
+                        <ul>
+                            <li>✅ Čuvanje konteksta između AI sesija</li>
+                            <li>✅ Automatsko nastavaljenje poslova</li>
+                            <li>✅ Brze snapshote stanja</li>
+                            <li>✅ Pretragu po ključnim rečima</li>
+                            <li>✅ Real-time sinhronizaciju</li>
+                        </ul>
+                    </div>
+
+                    <div class="about-card">
+                        <h3>💰 Cena</h3>
+                        <p>One-time kupovina: <strong>$20</strong></p>
+                        <p>Dozivi pristup, besplatne ažuriranja</p>
+                    </div>
+
+                    <div class="about-card">
+                        <h3>🔗 Linkovi</h3>
+                        <ul>
+                            <li><a href="https://github.com/izGamber/izGon-AI" target="_blank">GitHub</a></li>
+                            <li><a href="https://izgamber.github.io/IZgoN/" target="_blank">Zvanična stranica</a></li>
+                            <li><a href="mailto:support@izgamber.com">Podrška</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="about-card">
+                        <h3>📄 Licenca</h3>
+                        <p>MIT License - Slobodan za komercijalnu upotrebu</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showTab(tabName) {
+        // Sakrij sve tabove
+        document.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Sakrij sve dugmadi
+        document.querySelectorAll('.settings-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Prikaži izabrani tab
+        document.getElementById(tabName).classList.add('active');
+        
+        // Označio izabrano dugme
+        event.target.classList.add('active');
+    }
+
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+        localStorage.setItem('theme', theme);
+    }
+
+    function updateSetting(key, value) {
+        fetch('/api/settings/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, value })
+        }).then(r => r.json())
+          .then(data => showNotification('Postavka ažurirana', 'success'));
+    }
+
+    function toggleModel(modelName, enabled) {
+        fetch('/api/settings/model', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: modelName, enabled })
+        }).then(r => r.json())
+          .then(data => showNotification(`${modelName} je ${enabled ? 'aktiviran' : 'deaktiviran'}`, 'success'));
+    }
+
+    function deleteAllMemories() {
+        if (!confirm('⚠️ Sigurno želiš obrisati SVE memorije? Ovo se ne može vratiti!')) return;
+        
+        fetch('/api/admin/delete-all-memories', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                showNotification('Sve memorije obrisane', 'success');
+                updateStats();
+            });
+    }
+
+    function exportMemories() {
+        fetch('/api/memories/export')
+            .then(r => r.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `izGon-AI-memories-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                showNotification('Memorije preuzete', 'success');
+            });
+    }
+
+    function createBackup() {
+        fetch('/api/backup/create', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                showNotification('Backup kreiran', 'success');
+                loadBackups();
+            });
+    }
+
+    function loadBackups() {
+        fetch('/api/backup/list')
+            .then(r => r.json())
+            .then(backups => {
+                const html = backups.map(b => `
+                    <div class="backup-item">
+                        <span>${b.date}</span>
+                        <button onclick="restoreBackup('${b.id}')">Vrati</button>
+                    </div>
+                `).join('');
+                document.getElementById('backupsList').innerHTML = html;
+            });
+    }
+
+    // Učitaj backupe na start
+    loadBackups();
+</script>
+{% endblock %}
