@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   # izGon AI Backend
   api:
     build: .
     container_name: izgon-ai-api
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./app:/app/app
       - ./data:/app/data
@@ -15,8 +13,7 @@ services:
       - DEBUG=True
       - PYTHONUNBUFFERED=1
     command: uvicorn app.dashboard:asgi_app --host 0.0.0.0 --port 8000 --reload
-    depends_on:
-      - db
+
     networks:
       - izgon-network
     healthcheck:
@@ -26,14 +23,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # SQLite Database (optional - za demonstraciju)
-  db:
-    image: sqlite:latest
-    container_name: izgon-ai-db
-    volumes:
-      - ./data:/data
-    networks:
-      - izgon-network
+
 
 networks:
   izgon-network:

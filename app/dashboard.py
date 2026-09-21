@@ -6,7 +6,7 @@ Brain Engine sa WebSocket real-time komunikacijom
 from fastapi import FastAPI, WebSocket, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.requests import Request
 from starlette.websockets import WebSocketDisconnect
 import socketio
@@ -70,6 +70,21 @@ async def snapshot_created(sid, data):
 async def home(request: Request):
     """Home page sa dashboard-om"""
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
+@app.get("/brain", response_class=HTMLResponse)
+async def brain_page(request: Request):
+    """Brain analysis stranica"""
+    return templates.TemplateResponse("brain.html", {"request": request})
+
+@app.get("/memories", response_class=HTMLResponse)
+async def memories_page(request: Request):
+    """Memories stranica"""
+    return templates.TemplateResponse("memories.html", {"request": request})
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """Settings stranica"""
+    return templates.TemplateResponse("settings.html", {"request": request})
 
 @app.get("/health")
 async def health():
@@ -320,10 +335,13 @@ async def get_db_info():
 # ===== ERROR HANDLERS =====
 @app.exception_handler(Exception)
 async def universal_exception_handler(request: Request, exc: Exception):
-    return {
-        "error": str(exc),
-        "timestamp": datetime.now().isoformat()
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": str(exc),
+            "timestamp": datetime.now().isoformat()
+        }
+    )
 
 # ===== SERVER INFO =====
 @app.get("/api/info")

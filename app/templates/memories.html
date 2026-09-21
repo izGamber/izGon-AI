@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Memorije - izGon AI{% endblock %}
+
+{% block content %}
+<div class="memories-page">
+    <!-- Header -->
+    <section class="page-header">
+        <h1>
+            <i class="fas fa-database"></i> Memorije
+        </h1>
+        <p class="subtitle">Pregled i upravljanje svim memorijama</p>
+    </section>
+
+    <!-- Search and Filter -->
+    <section class="search-section">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Pretraži memorije..." />
+            <button onclick="searchMemories()">
+                <i class="fas fa-search"></i> Pretraži
+            </button>
+        </div>
+        
+        <div class="filter-section">
+            <select id="typeFilter" onchange="filterMemories()">
+                <option value="">Sve vrste</option>
+                <option value="note">Napomena</option>
+                <option value="learning">Učenje</option>
+                <option value="insight">Uvid</option>
+                <option value="error">Greška</option>
+                <option value="solution">Rešenje</option>
+            </select>
+            
+            <select id="importanceFilter" onchange="filterMemories()">
+                <option value="">Sva Važnost</option>
+                <option value="1">1 - Niska</option>
+                <option value="2">2 - Niska</option>
+                <option value="3">3 - Srednja</option>
+                <option value="4">4 - Visoka</option>
+                <option value="5">5 - Veoma visoka</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Memories List -->
+    <section class="memories-list">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-list"></i> Sve Memorije
+            </h2>
+            <button class="btn-primary" onclick="openAddMemoryModal()">
+                <i class="fas fa-plus"></i> Nova Memorija
+            </button>
+        </div>
+        
+        <div class="memories-grid" id="memoriesGrid">
+            <p class="loading">Učitavanje memorija...</p>
+        </div>
+    </section>
+
+    <!-- Pagination -->
+    <section class="pagination">
+        <button onclick="previousPage()" class="btn-secondary">← Prethodna</button>
+        <span id="pageInfo"></span>
+        <button onclick="nextPage()" class="btn-secondary">Sledeća →</button>
+    </section>
+</div>
+
+<!-- Modal za dodavanje memorije -->
+<div id="addMemoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Nova Memorija</h2>
+            <button class="close-btn" onclick="closeModal('addMemoryModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="memoryForm">
+                <div class="form-group">
+                    <label>Tip Memorije</label>
+                    <select name="memoryType" required>
+                        <option value="note">Napomena</option>
+                        <option value="learning">Učenje</option>
+                        <option value="insight">Uvid</option>
+                        <option value="error">Greška</option>
+                        <option value="solution">Rešenje</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Sadržaj</label>
+                    <textarea name="content" required placeholder="Unesite sadržaj memorije..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Važnost (1-5)</label>
+                    <input type="range" name="importance" min="1" max="5" value="3" oninput="updateImportanceValue(this.value)">
+                    <span id="importanceValue">3</span>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addMemoryModal')">
+                        Otkaži
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        Čuva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPage = 1;
+    const itemsPerPage = 20;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMemories();
+    });
+
+    function loadMemories(page = 1) {
+        const type = document.getElementById('typeFilter')?.value || '';
+        const importance = document.getElementById('importanceFilter')?.value || '';
+        
+        let url = `/api/brain/memories?limit=${itemsPerPage}`;
+        if (type) url += `&memory_type=${type}`;
+        
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                const memories = data.memories || [];
+                
+                // Filter by importance if selected
+                let filtered = memories;
+                if (importance) {
+                    filtered = memories.filter(m => m.importance == importance);
+                }
+                
+                renderMemories(filtered);
+                currentPage = page;
+                updatePaginationInfo(filtered.length);
+            })
+            .catch(err => {
+                document.getElementById('memoriesGrid').innerHTML = `<p class="error">Greška: ${err.message}</p>`;
+            });
+    }
+
+    function renderMemories(memories) {
+        const grid = document.getElementById('memoriesGrid');
+        
+        if (!memories || memories.length === 0) {
+            grid.innerHTML = '<p class="empty">Nema memorija</p>';
+            return;
+        }
+        
+        grid.innerHTML = memories.map(m => `
+            <div class="memory-card ${m.type}">
+                <div class="memory-header">
+                    <h3>${m.type}</h3>
+                    <span class="importance">★ ${m.importance || 3}</span>
+                </div>
+                <p class="memory-content">${m.content.substring(0, 150)}...</p>
+                <p class="memory-date">${new Date(m.timestamp).toLocaleDateString()}</p>
+                <div class="memory-actions">
+                    <button class="btn-small" onclick="viewMemory(${m.id})">Prikaži</button>
+                    <button class="btn-small danger" onclick="deleteMemory(${m.id})">Obriši</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function searchMemories() {
+        const query = document.getElementById('searchInput').value;
+        if (!query) {
+            loadMemories();
+            return;
+        }
+        
+        fetch(`/api/brain/search?keyword=${encodeURIComponent(query)}`)
+            .then(r => r.json())
+            .then(data => {
+                renderMemories(data.results);
+            });
+    }
+
+    function filterMemories() {
+        loadMemories();
+    }
+
+    function viewMemory(id) {
+        alert(`Prikazujem memoriju ${id}`);
+    }
+
+    function deleteMemory(id) {
+        if (confirm('Siguran si?')) {
+            fetch(`/api/brain/forget/${id}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(() => {
+                    alert('Memorija obrisana!');
+                    loadMemories();
+                });
+        }
+    }
+
+    function openAddMemoryModal() {
+        document.getElementById('addMemoryModal').style.display = 'block';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function updateImportanceValue(value) {
+        document.getElementById('importanceValue').textContent = value;
+    }
+
+    function previousPage() {
+        if (currentPage > 1) loadMemories(currentPage - 1);
+    }
+
+    function nextPage() {
+        loadMemories(currentPage + 1);
+    }
+
+    function updatePaginationInfo(total) {
+        document.getElementById('pageInfo').textContent = `Stranica ${currentPage} (${total} memorija)`;
+    }
+
+    // Form submission
+    document.getElementById('memoryForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        fetch(`/api/brain/remember?content=${encodeURIComponent(formData.get('content'))}&memory_type=${formData.get('memoryType')}&importance=${formData.get('importance')}`, {
+            method: 'POST'
+        })
+            .then(r => r.json())
+            .then(data => {
+                alert('Memorija čuvana! ✅');
+                closeModal('addMemoryModal');
+                e.target.reset();
+                loadMemories();
+            });
+    });
+</script>
+{% endblock %}

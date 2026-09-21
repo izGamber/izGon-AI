@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Brain Analysis - izGon AI{% endblock %}
+
+{% block content %}
+<div class="brain-page">
+    <!-- Header -->
+    <section class="page-header">
+        <h1>
+            <i class="fas fa-brain"></i> Brain Analysis
+        </h1>
+        <p class="subtitle">Detaljana analiza vašeg AI mozga</p>
+    </section>
+
+    <!-- Brain Health -->
+    <section class="brain-health">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-heartbeat"></i> Zdravlje Mozga
+            </h2>
+        </div>
+        
+        <div class="health-metrics">
+            <div class="metric-card">
+                <h3>Stanje</h3>
+                <p class="metric-value" id="brainState">Učitavanje...</p>
+            </div>
+            
+            <div class="metric-card">
+                <h3>Memorije</h3>
+                <p class="metric-value" id="brainMemories">0</p>
+            </div>
+            
+            <div class="metric-card">
+                <h3>Snapshots</h3>
+                <p class="metric-value" id="brainSnapshots">0</p>
+            </div>
+            
+            <div class="metric-card">
+                <h3>Poslednja Aktivnost</h3>
+                <p class="metric-value" id="brainLastUpdate">--</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memory Types Distribution -->
+    <section class="memory-distribution">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-chart-pie"></i> Distribucija po Tipu
+            </h2>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="typeChart" style="max-width: 600px;"></canvas>
+        </div>
+    </section>
+
+    <!-- Memory Statistics -->
+    <section class="memory-stats">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-chart-bar"></i> Statistika
+            </h2>
+        </div>
+        
+        <div class="stats-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tip Memorije</th>
+                        <th>Broj</th>
+                        <th>Prosečna Važnost</th>
+                        <th>Akcija</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <tr>
+                        <td colspan="4" style="text-align:center;">Učitavanje...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Brain Actions -->
+    <section class="brain-actions">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-tools"></i> Akcije
+            </h2>
+        </div>
+        
+        <div class="actions-grid">
+            <button class="action-btn primary" onclick="trainBrain()">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Obučavanje</span>
+            </button>
+            <button class="action-btn secondary" onclick="analyzeBrain()">
+                <i class="fas fa-microscope"></i>
+                <span>Analiza</span>
+            </button>
+            <button class="action-btn secondary" onclick="optimizeBrain()">
+                <i class="fas fa-bolt"></i>
+                <span>Optimizuj</span>
+            </button>
+            <button class="action-btn danger" onclick="resetBrain()">
+                <i class="fas fa-redo"></i>
+                <span>Resetuj</span>
+            </button>
+        </div>
+    </section>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let typeChart = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadBrainData();
+    });
+
+    function loadBrainData() {
+        fetch('/api/brain/stats')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('brainMemories').textContent = data.total_memories || 0;
+                document.getElementById('brainSnapshots').textContent = data.snapshot_count || 0;
+                document.getElementById('brainLastUpdate').textContent = new Date(data.last_updated).toLocaleTimeString();
+                document.getElementById('brainState').textContent = data.brain_health === 'optimal' ? '✅ Optimalno' : '⚠️ Potrebno učenje';
+            });
+
+        loadMemoryStats();
+    }
+
+    function loadMemoryStats() {
+        fetch('/api/brain/memories?limit=100')
+            .then(r => r.json())
+            .then(data => {
+                const memories = data.memories;
+                const typeStats = {};
+                
+                memories.forEach(m => {
+                    const type = m.type || 'note';
+                    if (!typeStats[type]) {
+                        typeStats[type] = { count: 0, importance: 0 };
+                    }
+                    typeStats[type].count++;
+                    typeStats[type].importance += m.importance || 3;
+                });
+
+                // Update table
+                const tbody = document.getElementById('statsBody');
+                tbody.innerHTML = Object.entries(typeStats).map(([type, stats]) => `
+                    <tr>
+                        <td>${type}</td>
+                        <td>${stats.count}</td>
+                        <td>${(stats.importance / stats.count).toFixed(1)}</td>
+                        <td><button class="btn-small" onclick="filterByType('${type}')">Prikaži</button></td>
+                    </tr>
+                `).join('');
+
+                // Update chart
+                updateTypeChart(typeStats);
+            });
+    }
+
+    function updateTypeChart(typeStats) {
+        const ctx = document.getElementById('typeChart').getContext('2d');
+        
+        if (typeChart) {
+            typeChart.destroy();
+        }
+
+        typeChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(typeStats),
+                datasets: [{
+                    data: Object.values(typeStats).map(s => s.count),
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function trainBrain() {
+        alert('Training brain sa novim podacima...');
+    }
+
+    function analyzeBrain() {
+        alert('Analiza u toku...');
+    }
+
+    function optimizeBrain() {
+        alert('Optimizacija memorije...');
+    }
+
+    function resetBrain() {
+        if (confirm('Siguran si? Ovo će obrisati sve memorije!')) {
+            fetch('/api/admin/reset-brain', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    alert('Brain je resetovan!');
+                    loadBrainData();
+                });
+        }
+    }
+
+    function filterByType(type) {
+        window.location.href = `/memories?type=${type}`;
+    }
+</script>
+{% endblock %}
