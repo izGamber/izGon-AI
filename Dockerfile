@@ -7,6 +7,7 @@ WORKDIR /app
 # Instaliraj sistemske zavisnosti
 RUN apt-get update && apt-get install -y \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Kopiraj requirements
