@@ -50,7 +50,7 @@ run.bat
 docker-compose up -d
 ```
 
-**Otvori:** http://localhost:8001
+**Otvori:** (http://127.0.0.1:8000/)
 
 ## 💰 Cena
 
